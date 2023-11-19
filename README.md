@@ -1,2 +1,2 @@
 # courses_api
-A simple courses RESTful API
+RESTful API that stores courses' codes, names and descriptions
