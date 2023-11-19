@@ -4,11 +4,11 @@ if (process.env.NODE_ENV !== "production") {
 
 const express = require('express');
 const app = express();
-const { v4: uuid } = require('uuid');
 const { validateReq } = require('./middleware');
 const mongoose = require('mongoose');
 
-const Course = require('./models/course')
+const Course = require('./models/course');
+const catchAsync = require('./catchAsync');
 
 app.use(express.json());
 
@@ -28,13 +28,14 @@ app.get('/', (req, res) => {
     res.send(`You\'re on port ${port}...`);
 });
 
-app.get('/api/courses', async (req, res) => {
+app.get('/api/courses', catchAsync(async (req, res) => {
     const courses = await Course.find({});
     res.json(courses);
-})
+}))
 
-app.post('/api/courses', async (req, res) => {
-    const dbLen = (await Course.find({})).length;
+app.post('/api/courses', validateReq, catchAsync(async (req, res) => {
+    const courses = await Course.find({}) 
+    const dbLen = courses[courses.length - 1].id;
     const course = {
         id: dbLen + 1,
         ...req.body
@@ -47,9 +48,9 @@ app.post('/api/courses', async (req, res) => {
     delete courseObject.__v;
 
     res.json(courseObject);
-})
+}))
 
-app.get('/api/courses/:id', async (req, res) => {
+app.get('/api/courses/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     const course = await Course.findOne({id});
     if (!course) {
@@ -57,9 +58,9 @@ app.get('/api/courses/:id', async (req, res) => {
     } else {
         res.json(course);
     }
-})
+}))
 
-app.put('/api/courses/:id', async (req,res) => {
+app.put('/api/courses/:id', validateReq, catchAsync(async (req,res) => {
     const { id } = req.params;
     const course = await Course.findOneAndUpdate({ id }, req.body, { runValidators: true, new: true });
     if (!course) {
@@ -67,9 +68,9 @@ app.put('/api/courses/:id', async (req,res) => {
     } else {
         res.json(course);
     }
-})
+}))
 
-app.delete('/api/courses/:id', async (req, res) => {
+app.delete('/api/courses/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
     const course = await Course.findOneAndDelete({ id });
     if (!course) {
@@ -77,6 +78,11 @@ app.delete('/api/courses/:id', async (req, res) => {
     } else {
         res.json(course);
     }
+}))
+
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).send('Something broke!')
 })
 
 app.listen(port, () => {
