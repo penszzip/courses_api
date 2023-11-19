@@ -22,22 +22,6 @@ db.once("open", () => {
     console.log("Database connected");
 });
 
-
-const courses = [
-    { id: 1, name: 'CPS109' },
-    { id: 2, name: 'CPS209' },
-    { id: 3, name: 'CPS310' },
-]
-
-findCourse = (req, res, next) => {
-    const course = courses.find(c => c.id === parseInt(req.params.id));
-    if (!course) {
-        res.status(404).send('The course with the given ID does not exist.');
-    } else {
-        next();
-    }
-}
-
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
@@ -57,26 +41,42 @@ app.post('/api/courses', async (req, res) => {
     };
     const newCourse = new Course(course);
     await newCourse.save();
-    res.json(newCourse);
+
+    const courseObject = newCourse.toObject();
+    delete courseObject._id;
+    delete courseObject.__v;
+
+    res.json(courseObject);
 })
 
 app.get('/api/courses/:id', async (req, res) => {
-    const id = req.params.id;
+    const { id } = req.params;
     const course = await Course.findOne({id});
-    res.json(course);
+    if (!course) {
+        res.status(404).send('The course with the given ID does not exist.')
+    } else {
+        res.json(course);
+    }
 })
 
-app.put('/api/courses/:id', validateReq, findCourse, (req,res) => {
-    const course = courses.find(c => c.id === parseInt(req.params.id));
-    course.name = req.body.name;
-    res.send(course);
+app.put('/api/courses/:id', async (req,res) => {
+    const { id } = req.params;
+    const course = await Course.findOneAndUpdate({ id }, req.body, { runValidators: true, new: true });
+    if (!course) {
+        res.status(404).send('The course with the given ID does not exist.')
+    } else {
+        res.json(course);
+    }
 })
 
-app.delete('/api/courses/:id', findCourse, (req, res) => {
-    const course = courses.find(c => c.id === parseInt(req.params.id));
-    const index = courses.indexOf(course);
-    courses.splice(index, 1);
-    res.send(course);
+app.delete('/api/courses/:id', async (req, res) => {
+    const { id } = req.params;
+    const course = await Course.findOneAndDelete({ id });
+    if (!course) {
+        res.status(404).send('The course with the given ID does not exist.')
+    } else {
+        res.json(course);
+    }
 })
 
 app.listen(port, () => {
