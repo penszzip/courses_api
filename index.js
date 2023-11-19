@@ -1,3 +1,7 @@
+if (process.env.NODE_ENV !== "production") {
+    require('dotenv').config();
+}
+
 const express = require('express');
 const app = express();
 const { v4: uuid } = require('uuid');
@@ -10,7 +14,7 @@ app.use(express.json());
 
 const dbUrl = process.env.DB_URL;
 
-mongoose.connect("mongodb+srv://penszzip:gKg97vLIJcH0R1dl@cluster0.yt5hfkl.mongodb.net/?retryWrites=true&w=majority")
+mongoose.connect(dbUrl);
 
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "connection error:"));
@@ -76,5 +80,5 @@ app.delete('/api/courses/:id', findCourse, (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log(`listening of port ${port}...`)
+    console.log(`listening of port ${port}...`);
 })
